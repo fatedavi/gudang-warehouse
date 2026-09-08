@@ -1,0 +1,61 @@
+@import 'tailwindcss';
+
+@source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
+@source '../../storage/framework/views/*.php';
+
+@theme {
+    --font-sans: 'Instrument Sans', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
+        'Segoe UI Symbol', 'Noto Color Emoji';
+    --font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+
+    --color-brand-50: #f2f6fb;
+    --color-brand-100: #e3edf7;
+    --color-brand-200: #c8daed;
+    --color-brand-300: #9dbfdd;
+    --color-brand-400: #6c9cc9;
+    --color-brand-500: #487fb4;
+    --color-brand-600: #356696;
+    --color-brand-700: #2c527a;
+    --color-brand-800: #294665;
+    --color-brand-900: #1c3149;
+    --color-brand-950: #101f30;
+
+    --shadow-card: 0 1px 2px 0 rgb(16 31 48 / 0.04), 0 1px 3px 0 rgb(16 31 48 / 0.06);
+    --shadow-lift: 0 4px 12px -2px rgb(16 31 48 / 0.12), 0 2px 4px -2px rgb(16 31 48 / 0.08);
+}
+
+@layer base {
+    body {
+        @apply bg-slate-100 text-slate-700 antialiased;
+    }
+}
+
+@layer components {
+    .card {
+        @apply rounded-xl border border-slate-200 bg-white shadow-card;
+    }
+
+    .card-head {
+        @apply border-b border-slate-200 px-5 py-4;
+    }
+
+    .btn-primary {
+        @apply inline-flex items-center justify-center gap-2 rounded-lg bg-brand-800 px-3.5 py-2 text-sm font-medium text-white transition hover:bg-brand-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-400 focus-visible:ring-offset-1 disabled:pointer-events-none disabled:opacity-60;
+    }
+
+    .btn-secondary {
+        @apply inline-flex items-center justify-center gap-2 rounded-lg border border-slate-300 bg-white px-3.5 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-400 focus-visible:ring-offset-1 disabled:pointer-events-none disabled:opacity-60;
+    }
+
+    .btn-danger {
+        @apply inline-flex items-center justify-center gap-2 rounded-lg border border-transparent bg-rose-50 px-3.5 py-2 text-sm font-medium text-rose-700 transition hover:bg-rose-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-rose-400 focus-visible:ring-offset-1 disabled:pointer-events-none disabled:opacity-60;
+    }
+
+    .input {
+        @apply w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 shadow-sm transition placeholder:text-slate-400 focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-200 disabled:bg-slate-100;
+    }
+
+    .label {
+        @apply mb-1.5 block text-xs font-semibold uppercase tracking-wide text-slate-500;
+    }
+}
