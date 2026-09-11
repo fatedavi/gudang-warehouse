@@ -75,13 +75,27 @@
             </div>
         </div>
 
-        <div class="px-5 py-4">
+        <div class="flex items-center justify-between px-5 py-4">
             <p class="text-sm text-slate-500">
                 Menampilkan <span class="font-semibold text-slate-700">{{ $barangs->total() }}</span> data
                 @if (collect($filter)->filter()->isNotEmpty())
                     <span class="text-slate-400">(hasil filter)</span>
                 @endif
             </p>
+            @php
+                $pdfRoute = match ($status) {
+                    \App\Models\Barang::STATUS_DI_GUDANG => 'laporan.gudang.pdf',
+                    \App\Models\Barang::STATUS_BARU => 'laporan.baru.pdf',
+                    \App\Models\Barang::STATUS_LAMA => 'laporan.lama.pdf',
+                    \App\Models\Barang::STATUS_TERJUAL => 'laporan.terjual.pdf',
+                };
+            @endphp
+            <a href="{{ route($pdfRoute) }}" target="_blank" class="inline-flex items-center gap-1.5 rounded-lg bg-red-50 px-3 py-1.5 text-xs font-semibold text-red-600 transition hover:bg-red-100">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" viewBox="0 0 20 20" fill="currentColor">
+                    <path fill-rule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clip-rule="evenodd" />
+                </svg>
+                Download PDF
+            </a>
         </div>
 
         {{-- TABEL --}}

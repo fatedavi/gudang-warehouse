@@ -43,6 +43,10 @@ Route::middleware('auth')->group(function () {
             Route::get('baru', [LaporanController::class, 'baru'])->name('baru');
             Route::get('lama', [LaporanController::class, 'lama'])->name('lama');
             Route::get('terjual', [LaporanController::class, 'terjual'])->name('terjual');
+            Route::get('gudang/pdf', [LaporanController::class, 'pdfGudang'])->name('gudang.pdf');
+            Route::get('baru/pdf', [LaporanController::class, 'pdfBaru'])->name('baru.pdf');
+            Route::get('lama/pdf', [LaporanController::class, 'pdfLama'])->name('lama.pdf');
+            Route::get('terjual/pdf', [LaporanController::class, 'pdfTerjual'])->name('terjual.pdf');
         });
     });
 });

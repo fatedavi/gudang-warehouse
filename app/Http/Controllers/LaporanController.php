@@ -3,7 +3,9 @@
 namespace App\Http\Controllers;
 
 use App\Models\Barang;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
+use Illuminate\Http\Response;
 use Illuminate\View\View;
 
 class LaporanController extends Controller
@@ -26,6 +28,56 @@ class LaporanController extends Controller
     public function terjual(Request $request): View
     {
         return $this->tampilkan($request, Barang::STATUS_TERJUAL);
+    }
+
+    public function pdfGudang(): Response
+    {
+        return $this->unduhPdf(Barang::STATUS_DI_GUDANG);
+    }
+
+    public function pdfBaru(): Response
+    {
+        return $this->unduhPdf(Barang::STATUS_BARU);
+    }
+
+    public function pdfLama(): Response
+    {
+        return $this->unduhPdf(Barang::STATUS_LAMA);
+    }
+
+    public function pdfTerjual(): Response
+    {
+        return $this->unduhPdf(Barang::STATUS_TERJUAL);
+    }
+
+    private function unduhPdf(string $status): Response
+    {
+        $query = Barang::query();
+
+        match ($status) {
+            Barang::STATUS_TERJUAL => $query->terjual(),
+            Barang::STATUS_DI_GUDANG => $query->stokGudang(),
+            Barang::STATUS_BARU => $query->baru(),
+            Barang::STATUS_LAMA => $query->lama(),
+        };
+
+        $barangs = $query->latest('id')->get();
+
+        $judul = match ($status) {
+            Barang::STATUS_DI_GUDANG => 'Barang di Gudang',
+            Barang::STATUS_BARU => 'Barang Baru',
+            Barang::STATUS_LAMA => 'Barang Lama',
+            Barang::STATUS_TERJUAL => 'Barang Terjual',
+        };
+
+        $pdf = Pdf::loadView('laporan.pdf', [
+            'barangs' => $barangs,
+            'judul' => $judul,
+        ])->setPaper('a4', 'landscape');
+
+        $namaFile = 'laporan-' . str_replace(' ', '-', strtolower($judul)) . '-' . now()->format('Y-m-d') . '.pdf';
+
+        return $pdf->download($namaFile);
     }
 
     private function tampilkan(Request $request, string $status): View
