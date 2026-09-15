@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
 class Barang extends Model
@@ -15,6 +16,8 @@ class Barang extends Model
     public const STATUS_BARU = 'baru';
 
     public const STATUS_LAMA = 'lama';
+
+    public const STATUS_CAMPURAN = 'campuran';
 
     public const STATUS_DI_GUDANG = 'di_gudang';
 
@@ -58,6 +61,8 @@ class Barang extends Model
                 'aksi' => 'masuk',
                 'detail' => "Produk {$barang->jenis_barang} {$barang->merk_produk} ({$barang->kode_produk}) ditambahkan, qty {$barang->qty}, sisa stok {$barang->sisa_stok}.",
             ]);
+
+            $barang->generasiUnitAwal();
         });
 
         static::updated(function (Barang $barang) {
@@ -97,8 +102,48 @@ class Barang extends Model
                 return self::STATUS_TERJUAL;
             }
 
-            return $this->pernahDikembalikan() ? self::STATUS_LAMA : self::STATUS_BARU;
+            $belum = $this->stokBelumKeluar();
+            $sudah = $this->stokSudahKeluar();
+
+            if ($belum > 0 && $sudah > 0) {
+                return self::STATUS_CAMPURAN;
+            }
+
+            return $sudah > 0 ? self::STATUS_LAMA : self::STATUS_BARU;
         });
+    }
+
+    public function stokBelumKeluar(): int
+    {
+        return $this->unit_stok_belum_keluar ?? $this->units()
+            ->stokBaru()
+            ->count();
+    }
+
+    public function stokSudahKeluar(): int
+    {
+        return $this->unit_stok_sudah_keluar ?? $this->units()
+            ->stokLama()
+            ->count();
+    }
+
+    public function unitTerjual(): int
+    {
+        return $this->unit_terjual ?? $this->units()
+            ->where('status', self::STATUS_TERJUAL)
+            ->count();
+    }
+
+    public function unitDiLuar(): int
+    {
+        return $this->unit_di_luar ?? $this->units()
+            ->where('status', BarangUnit::STATUS_KELUAR)
+            ->count();
+    }
+
+    public function pernahKeluar(): bool
+    {
+        return $this->keluars()->exists();
     }
 
     public function pernahDikembalikan(): bool
@@ -112,6 +157,7 @@ class Barang extends Model
             self::STATUS_DI_GUDANG => 'Barang di gudang',
             self::STATUS_BARU => 'Barang baru',
             self::STATUS_LAMA => 'Barang lama',
+            self::STATUS_CAMPURAN => 'Baru + Lama',
             self::STATUS_TERJUAL => 'Barang terjual',
         ];
     }
@@ -123,19 +169,34 @@ class Barang extends Model
 
     public function scopeTerjual($query)
     {
-        return $query->where('sisa_stok', 0);
+        return $query->where('terjual', '>', 0);
     }
 
     public function scopeBaru($query)
     {
-        return $query->stokGudang()
-            ->whereDoesntHave('keluars', fn ($q) => $q->where('kembali', true));
+        return $query->stokGudang()->whereHas('units', fn ($q) => $q->stokBaru());
     }
 
     public function scopeLama($query)
     {
+        return $query->stokGudang()->whereHas('units', fn ($q) => $q->stokLama());
+    }
+
+    public function scopeCampuran($query)
+    {
         return $query->stokGudang()
-            ->whereHas('keluars', fn ($q) => $q->where('kembali', true));
+            ->whereHas('units', fn ($q) => $q->stokBaru())
+            ->whereHas('units', fn ($q) => $q->stokLama());
+    }
+
+    public function scopeDenganUnitStok($query)
+    {
+        return $query->withCount([
+            'units as unit_stok_belum_keluar' => fn ($q) => $q->stokBaru(),
+            'units as unit_stok_sudah_keluar' => fn ($q) => $q->stokLama(),
+            'units as unit_di_luar' => fn ($q) => $q->where('status', BarangUnit::STATUS_KELUAR),
+            'units as unit_terjual' => fn ($q) => $q->where('status', BarangUnit::STATUS_TERJUAL),
+        ]);
     }
 
     protected static array $segmenKode = [
@@ -201,7 +262,7 @@ class Barang extends Model
 
     public function suffixKode(): string
     {
-        return $this->status === self::STATUS_LAMA ? self::SUFIX_LAMA : self::SUFIX_BARU;
+        return $this->pernahDikembalikan() ? self::SUFIX_LAMA : self::SUFIX_BARU;
     }
 
     public function kodeTampil(): string
@@ -232,6 +293,63 @@ class Barang extends Model
     public function keluars(): HasMany
     {
         return $this->hasMany(BarangKeluar::class);
+    }
+
+    public function units(): HasMany
+    {
+        return $this->hasMany(BarangUnit::class);
+    }
+
+    public function generasiUnitAwal(): void
+    {
+        $qty = (int) $this->qty;
+
+        if ($qty <= 0) {
+            return;
+        }
+
+        $terjual = min((int) $this->terjual, $qty);
+        $keluar = min((int) $this->keluar, max(0, $qty - $terjual));
+        $sisa = max(0, $qty - $terjual - $keluar);
+
+        $sekarang = now();
+        $rows = [];
+        $nomor = 1;
+
+        for ($i = 0; $i < $terjual; $i++) {
+            $rows[] = [
+                'barang_id' => $this->id,
+                'nomor_urut' => $nomor++,
+                'pernah_keluar' => true,
+                'status' => BarangUnit::STATUS_TERJUAL,
+                'created_at' => $sekarang,
+                'updated_at' => $sekarang,
+            ];
+        }
+
+        for ($i = 0; $i < $keluar; $i++) {
+            $rows[] = [
+                'barang_id' => $this->id,
+                'nomor_urut' => $nomor++,
+                'pernah_keluar' => true,
+                'status' => BarangUnit::STATUS_KELUAR,
+                'created_at' => $sekarang,
+                'updated_at' => $sekarang,
+            ];
+        }
+
+        for ($i = 0; $i < $sisa; $i++) {
+            $rows[] = [
+                'barang_id' => $this->id,
+                'nomor_urut' => $nomor++,
+                'pernah_keluar' => false,
+                'status' => BarangUnit::STATUS_DI_GUDANG,
+                'created_at' => $sekarang,
+                'updated_at' => $sekarang,
+            ];
+        }
+
+        DB::table('barang_units')->insert($rows);
     }
 
     public function sinkronkanKeluar(): void

@@ -3,8 +3,10 @@
 namespace App\Http\Controllers;
 
 use App\Models\Barang;
+use App\Models\BarangUnit;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
 
@@ -28,6 +30,7 @@ class BarangController extends Controller
                 Barang::STATUS_DI_GUDANG => $query->stokGudang(),
                 Barang::STATUS_BARU => $query->baru(),
                 Barang::STATUS_LAMA => $query->lama(),
+                Barang::STATUS_CAMPURAN => $query->campuran(),
                 default => null,
             };
         }
@@ -40,7 +43,7 @@ class BarangController extends Controller
             $query->where('merk_produk', $merk);
         }
 
-        $barangs = $query->latest('id')->paginate(10)->withQueryString();
+        $barangs = $query->denganUnitStok()->latest('id')->paginate(10)->withQueryString();
 
         return view('barang.index', [
             'barangs' => $barangs,
@@ -86,6 +89,13 @@ class BarangController extends Controller
 
     public function show(Barang $barang): View
     {
+        $barang->loadCount([
+            'units as unit_stok_belum_keluar' => fn ($q) => $q->stokBaru(),
+            'units as unit_stok_sudah_keluar' => fn ($q) => $q->stokLama(),
+            'units as unit_di_luar' => fn ($q) => $q->where('status', BarangUnit::STATUS_KELUAR),
+            'units as unit_terjual' => fn ($q) => $q->where('status', BarangUnit::STATUS_TERJUAL),
+        ]);
+
         return view('barang.show', [
             'barang' => $barang,
         ]);
@@ -107,6 +117,8 @@ class BarangController extends Controller
         $data = $this->hitungMargin($data);
 
         $barang->update([...$data, 'keluar' => $barang->keluar]);
+
+        $this->sinkronkanUnitQty($barang, (int) $data['qty']);
 
         return redirect()->route('barang.index')
             ->with('sukses', 'Data produk berhasil diperbarui.');
@@ -184,5 +196,35 @@ class BarangController extends Controller
         $data['margin_persen'] = $hargaGudang > 0 ? round(($data['margin_kotor'] / $hargaGudang) * 100, 2) : 0.0;
 
         return $data;
+    }
+
+    private function sinkronkanUnitQty(Barang $barang, int $qty): void
+    {
+        $jumlahAda = (int) $barang->units()->count();
+
+        if ($qty > $jumlahAda) {
+            $this->buatUnitBarangFrom($barang, $jumlahAda + 1, $qty);
+        } elseif ($qty < $jumlahAda) {
+            $barang->units()->where('nomor_urut', '>', $qty)->delete();
+        }
+    }
+
+    private function buatUnitBarangFrom(Barang $barang, int $mulai, int $sampai): void
+    {
+        $sekarang = now();
+        $rows = [];
+
+        for ($i = $mulai; $i <= $sampai; $i++) {
+            $rows[] = [
+                'barang_id' => $barang->id,
+                'nomor_urut' => $i,
+                'pernah_keluar' => false,
+                'status' => BarangUnit::STATUS_DI_GUDANG,
+                'created_at' => $sekarang,
+                'updated_at' => $sekarang,
+            ];
+        }
+
+        DB::table('barang_units')->insert($rows);
     }
 }

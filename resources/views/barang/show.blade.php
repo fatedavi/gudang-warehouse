@@ -1,6 +1,7 @@
 @extends('layouts.app')
 
 @php
+    $isAdmin = auth()->user()?->isAdmin();
     $judul = 'Detail Produk';
     $breadcrumbs = [
         ['label' => 'Dashboard', 'url' => route('dashboard')],
@@ -37,16 +38,9 @@
                     <dd class="mt-1 text-sm font-semibold capitalize text-slate-800">{{ $barang->kondisi_barang }}</dd>
                 </div>
                 <div class="rounded-xl border border-slate-200 bg-slate-50/60 p-4">
-                    <dt class="text-xs font-semibold uppercase tracking-wide text-slate-400">Qty / Terjual</dt>
+                    <dt class="text-xs font-semibold uppercase tracking-wide text-slate-400">Total Unit</dt>
                     <dd class="mt-1 font-mono text-lg font-bold tabular-nums text-brand-950">
-                        {{ number_format($barang->qty, 0, ',', '.') }}
-                        <span class="text-sm font-semibold text-slate-500">/ {{ number_format($barang->terjual, 0, ',', '.') }} terjual</span>
-                    </dd>
-                </div>
-                <div class="rounded-xl border border-slate-200 bg-slate-50/60 p-4">
-                    <dt class="text-xs font-semibold uppercase tracking-wide text-slate-400">Keluar / Terjual</dt>
-                    <dd class="mt-1 font-mono text-sm font-semibold text-slate-800">
-                        Keluar {{ number_format($barang->keluar, 0, ',', '.') }} · Terjual {{ number_format($barang->terjual, 0, ',', '.') }}
+                        {{ number_format($barang->qty, 0, ',', '.') }} unit
                     </dd>
                 </div>
                 <div class="rounded-xl border border-brand-100 bg-brand-50/60 p-4">
@@ -77,13 +71,44 @@
                 </div>
             </dl>
 
+            <div class="border-t border-slate-100 px-6 py-5">
+                <div class="mb-3 flex items-center justify-between">
+                    <h3 class="text-sm font-bold uppercase tracking-wide text-brand-950">Komposisi Unit</h3>
+                    <span class="text-xs text-slate-400">Total {{ number_format($barang->qty, 0, ',', '.') }} unit</span>
+                </div>
+                <div class="grid grid-cols-2 gap-3 lg:grid-cols-4">
+                    <div class="rounded-xl border border-slate-200 bg-slate-50/60 p-3">
+                        <p class="text-[11px] font-semibold uppercase tracking-wide text-slate-500">Terjual</p>
+                        <p class="mt-1 font-mono text-xl font-bold tabular-nums text-slate-700">{{ number_format($barang->unitTerjual(), 0, ',', '.') }}</p>
+                        <p class="text-[11px] text-slate-400">unit terjual</p>
+                    </div>
+                    <div class="rounded-xl border border-rose-100 bg-rose-50/60 p-3">
+                        <p class="text-[11px] font-semibold uppercase tracking-wide text-rose-500">Dipegang Penjual</p>
+                        <p class="mt-1 font-mono text-xl font-bold tabular-nums text-rose-600">{{ number_format($barang->unitDiLuar(), 0, ',', '.') }}</p>
+                        <p class="text-[11px] text-rose-400">masih di luar</p>
+                    </div>
+                    <div class="rounded-xl border border-amber-100 bg-amber-50/60 p-3">
+                        <p class="text-[11px] font-semibold uppercase tracking-wide text-amber-600">Sisa Baru</p>
+                        <p class="mt-1 font-mono text-xl font-bold tabular-nums text-amber-700">{{ number_format($barang->stokBelumKeluar(), 0, ',', '.') }}</p>
+                        <p class="text-[11px] text-amber-500">di gudang</p>
+                    </div>
+                    <div class="rounded-xl border border-sky-100 bg-sky-50/60 p-3">
+                        <p class="text-[11px] font-semibold uppercase tracking-wide text-sky-600">Sisa Lama</p>
+                        <p class="mt-1 font-mono text-xl font-bold tabular-nums text-sky-700">{{ number_format($barang->stokSudahKeluar(), 0, ',', '.') }}</p>
+                        <p class="text-[11px] text-sky-500">pernah keluar</p>
+                    </div>
+                </div>
+            </div>
+
             <div class="flex items-center justify-end gap-3 border-t border-slate-100 px-6 py-4">
+                @if ($isAdmin)
                 <a href="{{ route('barang.edit', $barang) }}" class="btn-primary">
                     <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125" />
                     </svg>
                     Edit Barang
                 </a>
+            @endif
                 <a href="{{ route('barang.index') }}" class="btn-secondary">Kembali</a>
             </div>
         </div>

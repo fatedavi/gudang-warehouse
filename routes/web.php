@@ -25,11 +25,18 @@ Route::middleware('auth')->group(function () {
     Route::post('barang-keluar/{barangKeluar}/kembali', [BarangKeluarController::class, 'kembali'])->name('keluar.kembali');
     Route::post('barang-keluar/{barangKeluar}/jual', [BarangKeluarController::class, 'jual'])->name('keluar.jual');
 
+    // Data Barang (index & show terbuka untuk semua; kelola khusus admin)
+    Route::get('barang', [BarangController::class, 'index'])->name('barang.index');
+    Route::get('barang/create', [BarangController::class, 'create'])->name('barang.create')->middleware('admin');
+    Route::get('barang/kode', [BarangController::class, 'kodeOtomatis'])->name('barang.kode')->middleware('admin');
+    Route::post('barang', [BarangController::class, 'store'])->name('barang.store')->middleware('admin');
+    Route::get('barang/{barang}', [BarangController::class, 'show'])->name('barang.show');
+    Route::get('barang/{barang}/edit', [BarangController::class, 'edit'])->name('barang.edit')->middleware('admin');
+    Route::put('barang/{barang}', [BarangController::class, 'update'])->name('barang.update')->middleware('admin');
+    Route::delete('barang/{barang}', [BarangController::class, 'destroy'])->name('barang.destroy')->middleware('admin');
+
     // Khusus admin
     Route::middleware('admin')->group(function () {
-        Route::resource('barang', BarangController::class)->except(['show']);
-        Route::get('barang/kode', [BarangController::class, 'kodeOtomatis'])->name('barang.kode');
-        Route::get('barang/{barang}', [BarangController::class, 'show'])->name('barang.show');
 
         Route::get('konfigurasi', [KonfigurasiController::class, 'index'])->name('konfigurasi.index');
         Route::post('konfigurasi', [KonfigurasiController::class, 'store'])->name('konfigurasi.store');

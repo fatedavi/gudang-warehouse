@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\Barang;
 use App\Models\BarangKeluar;
+use App\Models\BarangUnit;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -200,7 +201,8 @@ class GudangPagesTest extends TestCase
     {
         $this->actingAs($this->penjual);
 
-        $this->get('/barang')->assertRedirect(route('keluar.index'));
+        $this->get('/barang')->assertOk();
+        $this->get('/barang/create')->assertRedirect(route('keluar.index'));
         $this->get('/konfigurasi')->assertRedirect(route('keluar.index'));
         $this->get('/histori')->assertRedirect(route('keluar.index'));
     }
@@ -302,7 +304,7 @@ class GudangPagesTest extends TestCase
 
     public function test_status_baru_lama_dan_terjual(): void
     {
-        $baru = Barang::where('sisa_stok', '>', 0)->firstOrFail();
+        $baru = Barang::where('sisa_stok', '>', 0)->orderBy('sisa_stok', 'desc')->firstOrFail();
         $terjual = Barang::where('sisa_stok', 0)->firstOrFail();
 
         self::assertSame(Barang::STATUS_BARU, $baru->status);
@@ -321,7 +323,7 @@ class GudangPagesTest extends TestCase
         $this->post("/barang-keluar/{$keluar->id}/kembali", ['jumlah' => 1]);
 
         $baru->refresh();
-        self::assertSame(Barang::STATUS_LAMA, $baru->status);
+        self::assertSame(Barang::STATUS_CAMPURAN, $baru->status);
         self::assertSame(1, Barang::lama()->count());
     }
 
@@ -352,9 +354,11 @@ class GudangPagesTest extends TestCase
     {
         $this->loginSebagaiAdmin();
 
-        $this->get('/laporan/gudang')->assertOk()->assertSee('Barang di Gudang');
-        $this->get('/laporan/baru')->assertOk()->assertSee('Barang Baru');
-        $this->get('/laporan/lama')->assertOk()->assertSee('Barang Lama');
+        $this->get('/laporan/gudang')->assertOk()->assertSee('Barang di Gudang')
+            ->assertSee('Barang Baru')
+            ->assertSee('Barang Lama')
+            ->assertSee('Barang di Luar')
+            ->assertSee('Total unit yang sudah terjual');
         $this->get('/laporan/terjual')->assertOk()->assertSee('Barang Terjual');
     }
 
@@ -472,5 +476,165 @@ class GudangPagesTest extends TestCase
         $barang->refresh();
         self::assertSame(0, $barang->sisa_stok);
         self::assertSame(Barang::STATUS_TERJUAL, $barang->status);
+    }
+
+    public function test_store_membuat_unit_sesuai_qty(): void
+    {
+        $this->loginSebagaiAdmin();
+
+        $this->post('/barang', [
+            'kode_produk' => '',
+            'jenis_barang' => 'Sandal Perempuan',
+            'merk_produk' => 'test-unit',
+            'ukuran_produk' => '40',
+            'warna_produk' => 'putih',
+            'kondisi_barang' => 'baru',
+            'qty' => 5,
+            'terjual' => 0,
+            'harga_gudang' => 50000,
+            'harga_jual' => 75000,
+            'margin_kotor' => 25000,
+            'margin_persen' => 50.0,
+        ]);
+
+        $barang = Barang::where('merk_produk', 'test-unit')->firstOrFail();
+        self::assertSame(5, $barang->units()->count());
+        self::assertSame(5, $barang->units()->stokBaru()->count());
+        self::assertSame(0, $barang->units()->stokLama()->count());
+        self::assertSame(Barang::STATUS_BARU, $barang->refresh()->status);
+    }
+
+    public function test_unit_flip_saat_keluar_kembali_jual(): void
+    {
+        $this->actingAs($this->penjual);
+
+        $barang = Barang::where('sisa_stok', '>', 4)->orderBy('sisa_stok', 'desc')->firstOrFail();
+        $terjualAwal = $barang->units()->where('status', BarangUnit::STATUS_TERJUAL)->count();
+
+        $this->post('/barang-keluar', [
+            'barang_id' => $barang->id,
+            'jumlah' => 4,
+        ]);
+
+        $keluar = BarangKeluar::where('kembali', false)->where('barang_id', $barang->id)->firstOrFail();
+
+        self::assertSame(4, $barang->refresh()->units()->where('status', BarangUnit::STATUS_KELUAR)->count());
+        self::assertSame(0, $barang->units()->stokLama()->count());
+
+        $this->post("/barang-keluar/{$keluar->id}/kembali", ['jumlah' => 1]);
+
+        self::assertSame(1, $barang->refresh()->units()->stokLama()->count());
+        self::assertSame(3, $barang->units()->where('status', BarangUnit::STATUS_KELUAR)->count());
+
+        $this->post("/barang-keluar/{$keluar->id}/jual", ['jumlah' => 2]);
+
+        self::assertSame($terjualAwal + 2, $barang->refresh()->units()->where('status', BarangUnit::STATUS_TERJUAL)->count());
+        self::assertSame(1, $barang->units()->where('status', BarangUnit::STATUS_KELUAR)->count());
+        self::assertSame(1, $barang->units()->stokLama()->count());
+    }
+
+    public function test_status_campuran_saat_unit_campuran(): void
+    {
+        $this->loginSebagaiAdmin();
+
+        $this->post('/barang', [
+            'kode_produk' => '',
+            'jenis_barang' => 'Sandal Perempuan',
+            'merk_produk' => 'test-campuran',
+            'ukuran_produk' => '40',
+            'warna_produk' => 'putih',
+            'kondisi_barang' => 'baru',
+            'qty' => 5,
+            'terjual' => 0,
+            'harga_gudang' => 50000,
+            'harga_jual' => 75000,
+            'margin_kotor' => 25000,
+            'margin_persen' => 50.0,
+        ]);
+
+        $barang = Barang::where('merk_produk', 'test-campuran')->firstOrFail();
+
+        $this->actingAs($this->penjual);
+        $this->post('/barang-keluar', [
+            'barang_id' => $barang->id,
+            'jumlah' => 1,
+        ]);
+
+        $keluar = BarangKeluar::where('kembali', false)->where('barang_id', $barang->id)->firstOrFail();
+        $this->post("/barang-keluar/{$keluar->id}/kembali", ['jumlah' => 1]);
+
+        $barang->refresh();
+        self::assertSame(Barang::STATUS_CAMPURAN, $barang->status);
+        self::assertSame(4, $barang->stokBelumKeluar());
+        self::assertSame(1, $barang->stokSudahKeluar());
+
+        $kodeTampil = $barang->kode_produk;
+
+        $this->actingAs($this->admin);
+        $this->get('/barang?status=campuran')->assertOk()->assertSee($kodeTampil);
+        $this->get('/barang?status=lama')->assertOk()->assertSee($kodeTampil);
+        $this->get('/barang?status=baru')->assertOk()->assertSee($kodeTampil);
+    }
+
+    public function test_semua_unit_seeded_status_diautamakan(): void
+    {
+        $terjual = Barang::where('sisa_stok', 0)->firstOrFail();
+        self::assertSame(0, $terjual->units()->stokBaru()->count());
+        self::assertSame(0, $terjual->units()->stokLama()->count());
+        self::assertSame($terjual->qty, $terjual->units()->where('status', BarangUnit::STATUS_TERJUAL)->count());
+
+        $baru = Barang::where('sisa_stok', '>', 0)->firstOrFail();
+        self::assertSame($baru->sisa_stok, $baru->refresh()->units()->stokBaru()->count());
+        self::assertSame(0, $baru->units()->stokLama()->count());
+    }
+
+    public function test_keterangan_komposisi_unit_di_detail_dan_tabel(): void
+    {
+        $this->loginSebagaiAdmin();
+
+        $this->post('/barang', [
+            'kode_produk' => '',
+            'jenis_barang' => 'Sandal Perempuan',
+            'merk_produk' => 'test-komposisi',
+            'ukuran_produk' => '40',
+            'warna_produk' => 'putih',
+            'kondisi_barang' => 'baru',
+            'qty' => 5,
+            'terjual' => 0,
+            'harga_gudang' => 50000,
+            'harga_jual' => 75000,
+            'margin_kotor' => 25000,
+            'margin_persen' => 50.0,
+        ]);
+
+        $barang = Barang::where('merk_produk', 'test-komposisi')->firstOrFail();
+
+        $this->actingAs($this->penjual);
+        $this->post('/barang-keluar', ['barang_id' => $barang->id, 'jumlah' => 3]);
+
+        $keluar = BarangKeluar::where('kembali', false)->where('barang_id', $barang->id)->firstOrFail();
+        $this->post("/barang-keluar/{$keluar->id}/kembali", ['jumlah' => 1]);
+        $this->post("/barang-keluar/{$keluar->id}/jual", ['jumlah' => 1]);
+
+        $barang->refresh();
+        self::assertSame(1, $barang->unitDiLuar());
+        self::assertSame(1, $barang->unitTerjual());
+        self::assertSame(2, $barang->stokBelumKeluar());
+        self::assertSame(1, $barang->stokSudahKeluar());
+
+        $this->get("/barang/{$barang->id}")
+            ->assertOk()
+            ->assertSee('Komposisi Unit')
+            ->assertSee('Dipegang Penjual')
+            ->assertSee('masih di luar')
+            ->assertSee('Sisa Baru')
+            ->assertSee('Sisa Lama');
+
+        $this->get('/barang')
+            ->assertOk()
+            ->assertSee('Diluar 1')
+            ->assertSee('Terjual 1')
+            ->assertSee('Baru 2')
+            ->assertSee('Lama 1');
     }
 }

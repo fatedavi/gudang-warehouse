@@ -28,6 +28,7 @@
         .status { display: inline-block; padding: 1px 6px; border-radius: 3px; font-size: 9px; font-weight: bold; }
         .status-baru { background: #e0f2fe; color: #0369a1; }
         .status-lama { background: #fef3c7; color: #b45309; }
+        .status-campuran { background: #ede9fe; color: #7c3aed; }
         .status-terjual { background: #f1f5f9; color: #475569; }
         .footer { margin-top: 20px; border-top: 2px solid #e2e8f0; padding-top: 10px; display: flex; justify-content: space-between; font-size: 9px; color: #94a3b8; }
         .footer .total-row { font-weight: bold; font-size: 10px; color: #334155; }
@@ -76,6 +77,7 @@
                     <th class="num">Terjual</th>
                     <th class="num">Keluar</th>
                     <th class="num">Sisa Stok</th>
+                    <th>Unit Baru / Lama</th>
                     <th class="num">Harga Jual</th>
                     <th>Status</th>
                 </tr>
@@ -93,11 +95,22 @@
                         <td class="num">{{ number_format($barang->terjual, 0, ',', '.') }}</td>
                         <td class="num">{{ number_format($barang->keluar, 0, ',', '.') }}</td>
                         <td class="num" style="font-weight: bold;">{{ number_format($barang->sisa_stok, 0, ',', '.') }}</td>
+                        <td>
+                            @if ($barang->stokBelumKeluar() > 0)
+                                <span style="color: #0369a1;">Baru {{ $barang->stokBelumKeluar() }}</span>
+                            @endif
+                            @if ($barang->stokBelumKeluar() > 0 && $barang->stokSudahKeluar() > 0)
+                                <span style="color: #cbd5e1;"> / </span>
+                            @endif
+                            @if ($barang->stokSudahKeluar() > 0)
+                                <span style="color: #b45309;">Lama {{ $barang->stokSudahKeluar() }}</span>
+                            @endif
+                        </td>
                         <td class="num">Rp {{ number_format($barang->harga_jual, 0, ',', '.') }}</td>
                         <td>
                             @php $st = $barang->status; @endphp
                             <span class="status status-{{ $st }}">
-                                {{ match($st) { 'baru' => 'BARU', 'lama' => 'LAMA', default => 'TERJUAL' } }}
+                                {{ match($st) { 'baru' => 'BARU', 'lama' => 'LAMA', 'campuran' => 'BARU + LAMA', default => 'TERJUAL' } }}
                             </span>
                         </td>
                     </tr>

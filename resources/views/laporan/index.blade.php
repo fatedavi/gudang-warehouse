@@ -3,9 +3,10 @@
 @php
     $meta = match ($status) {
         \App\Models\Barang::STATUS_DI_GUDANG => ['Barang di Gudang', 'Semua barang dengan sisa stok di gudang (baru + lama).'],
-        \App\Models\Barang::STATUS_BARU => ['Barang Baru', 'Stok segar di gudang yang belum pernah keluar.'],
-        \App\Models\Barang::STATUS_LAMA => ['Barang Lama', 'Barang yang pernah keluar lalu kembali ke gudang (belum laku).'],
-        \App\Models\Barang::STATUS_TERJUAL => ['Barang Terjual', 'Barang dengan sisa stok sudah habis terjual.'],
+        \App\Models\Barang::STATUS_BARU => ['Barang Baru', 'Unit yang belum pernah keluar dari gudang.'],
+        \App\Models\Barang::STATUS_LAMA => ['Barang Lama', 'Unit yang pernah keluar dan masih tersisa di gudang.'],
+        \App\Models\Barang::STATUS_CAMPURAN => ['Baru + Lama', 'Barang dengan campuran unit baru dan lama.'],
+        \App\Models\Barang::STATUS_TERJUAL => ['Barang Terjual', 'Barang yang sudah terjual, sebagian atau seluruhnya.'],
     };
     $judul = 'Laporan ' . $meta[0];
     $breadcrumbs = [
@@ -17,22 +18,31 @@
 
 @section('konten')
     {{-- RINGKASAN PER STATUS --}}
-    <div class="mb-5 grid grid-cols-2 gap-3 xl:grid-cols-4">
+    <div class="mb-5 grid grid-cols-2 gap-3 xl:grid-cols-5">
         <a href="{{ route('laporan.gudang') }}" class="rounded-xl border p-4 shadow-card transition {{ $status === \App\Models\Barang::STATUS_DI_GUDANG ? 'border-emerald-300 bg-emerald-50' : 'border-slate-200 bg-white hover:border-emerald-200' }}">
             <p class="text-xs font-semibold uppercase tracking-wide text-slate-400">Di Gudang</p>
             <p class="mt-1 font-mono text-2xl font-bold tabular-nums text-emerald-700">{{ number_format($ringkasan[\App\Models\Barang::STATUS_DI_GUDANG], 0, ',', '.') }}</p>
+            <p class="mt-1 text-[11px] leading-snug text-slate-400">Produk yang masih punya sisa stok di gudang.</p>
         </a>
         <a href="{{ route('laporan.baru') }}" class="rounded-xl border p-4 shadow-card transition {{ $status === \App\Models\Barang::STATUS_BARU ? 'border-sky-300 bg-sky-50' : 'border-slate-200 bg-white hover:border-sky-200' }}">
             <p class="text-xs font-semibold uppercase tracking-wide text-slate-400">Barang Baru</p>
             <p class="mt-1 font-mono text-2xl font-bold tabular-nums text-sky-700">{{ number_format($ringkasan[\App\Models\Barang::STATUS_BARU], 0, ',', '.') }}</p>
+            <p class="mt-1 text-[11px] leading-snug text-slate-400">Unit di gudang yang belum pernah keluar.</p>
         </a>
         <a href="{{ route('laporan.lama') }}" class="rounded-xl border p-4 shadow-card transition {{ $status === \App\Models\Barang::STATUS_LAMA ? 'border-amber-300 bg-amber-50' : 'border-slate-200 bg-white hover:border-amber-200' }}">
             <p class="text-xs font-semibold uppercase tracking-wide text-slate-400">Barang Lama</p>
             <p class="mt-1 font-mono text-2xl font-bold tabular-nums text-amber-700">{{ number_format($ringkasan[\App\Models\Barang::STATUS_LAMA], 0, ',', '.') }}</p>
+            <p class="mt-1 text-[11px] leading-snug text-slate-400">Unit di gudang yang pernah keluar lalu kembali.</p>
+        </a>
+        <a href="{{ route('keluar.index') }}" class="rounded-xl border p-4 shadow-card transition border-rose-200 bg-white hover:border-rose-300">
+            <p class="text-xs font-semibold uppercase tracking-wide text-rose-500">Barang di Luar</p>
+            <p class="mt-1 font-mono text-2xl font-bold tabular-nums text-rose-600">{{ number_format($ringkasan[\App\Models\BarangUnit::STATUS_KELUAR], 0, ',', '.') }}</p>
+            <p class="mt-1 text-[11px] leading-snug text-slate-400">Unit masih dipegang penjual / di luar belum kembali.</p>
         </a>
         <a href="{{ route('laporan.terjual') }}" class="rounded-xl border p-4 shadow-card transition {{ $status === \App\Models\Barang::STATUS_TERJUAL ? 'border-slate-300 bg-slate-50' : 'border-slate-200 bg-white hover:border-slate-200' }}">
             <p class="text-xs font-semibold uppercase tracking-wide text-slate-400">Terjual</p>
             <p class="mt-1 font-mono text-2xl font-bold tabular-nums text-slate-700">{{ number_format($ringkasan[\App\Models\Barang::STATUS_TERJUAL], 0, ',', '.') }}</p>
+            <p class="mt-1 text-[11px] leading-snug text-slate-400">Total unit yang sudah terjual.</p>
         </a>
     </div>
 
@@ -110,6 +120,7 @@
                         <th class="px-5 py-3 font-semibold text-right">Terjual</th>
                         <th class="px-5 py-3 font-semibold text-right">Keluar</th>
                         <th class="px-5 py-3 font-semibold text-right">Sisa Stok</th>
+                        <th class="px-5 py-3 font-semibold">Unit</th>
                         <th class="px-5 py-3 font-semibold text-right">Harga Jual</th>
                         <th class="px-5 py-3 font-semibold">Status</th>
                     </tr>
@@ -133,6 +144,24 @@
                             <td class="px-5 py-3 text-right font-mono font-semibold tabular-nums {{ $barang->sisa_stok > 0 ? 'text-brand-950' : 'text-slate-400' }}">
                                 {{ number_format($barang->sisa_stok, 0, ',', '.') }}
                             </td>
+                            <td class="whitespace-nowrap px-5 py-3 text-xs">
+                                @php
+                                    $bagian = [
+                                        $barang->stokBelumKeluar() > 0 ? ['Baru', $barang->stokBelumKeluar(), 'text-sky-600'] : null,
+                                        $barang->stokSudahKeluar() > 0 ? ['Lama', $barang->stokSudahKeluar(), 'text-amber-600'] : null,
+                                        $barang->unitDiLuar() > 0 ? ['Diluar', $barang->unitDiLuar(), 'text-rose-600'] : null,
+                                        $barang->unitTerjual() > 0 ? ['Terjual', $barang->unitTerjual(), 'text-slate-500'] : null,
+                                    ];
+                                @endphp
+                                @forelse (array_filter($bagian) as $i => [$label, $nilai, $warna])
+                                    @if ($i > 0)
+                                        <span class="mx-0.5 text-slate-300">/</span>
+                                    @endif
+                                    <span class="{{ $warna }}">{{ $label }} {{ $nilai }}</span>
+                                @empty
+                                    <span class="text-slate-400">—</span>
+                                @endforelse
+                            </td>
                             <td class="px-5 py-3 text-right font-mono tabular-nums text-slate-700">
                                 Rp {{ number_format($barang->harga_jual, 0, ',', '.') }}
                             </td>
@@ -140,7 +169,7 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="9" class="px-5 py-16 text-center">
+                            <td colspan="10" class="px-5 py-16 text-center">
                                 <p class="text-sm font-medium text-slate-500">Tidak ada data ditemukan</p>
                                 <p class="mt-1 text-sm text-slate-400">Coba ubah kata kunci pencarian atau filter.</p>
                             </td>

@@ -16,11 +16,23 @@
             <div class="card h-fit xl:col-span-1">
                 <div class="card-head">
                     <h2 class="text-base font-bold text-brand-950">Catat Barang Keluar</h2>
-                    <p class="mt-0.5 text-sm text-slate-500">User penjual mengambil barang untuk dijual; admin mencatat. Stok gudang berkurang otomatis.</p>
+                    <p class="mt-0.5 text-sm text-slate-500">Admin mencatat pengambilan barang atas nama penjual. Stok gudang berkurang otomatis.</p>
                 </div>
 
                 <form action="{{ route('keluar.store') }}" method="POST" class="space-y-4 p-6">
                     @csrf
+                    <div>
+                        <label for="user_id" class="label">User Penjual <span class="text-rose-500">*</span></label>
+                        <select name="user_id" id="user_id" required class="input">
+                            <option value="">-- Pilih User Penjual --</option>
+                            @foreach ($daftarUser as $u)
+                                <option value="{{ $u->id }}" @selected(old('user_id') == $u->id)>{{ $u->name }}</option>
+                            @endforeach
+                        </select>
+                        @error('user_id')
+                            <p class="mt-1 text-xs text-rose-600">{{ $message }}</p>
+                        @enderror
+                    </div>
                     <div>
                         <label for="barang_id" class="label">Pilih Barang <span class="text-rose-500">*</span></label>
                         <select name="barang_id" id="barang_id" required class="input">
@@ -61,7 +73,7 @@
             <div class="card xl:col-span-2">
                 <div class="card-head">
                     <h2 class="text-base font-bold text-brand-950">Daftar Barang Keluar</h2>
-                    <p class="mt-0.5 text-sm text-slate-500">Pengambilan barang yang belum dikembalikan ke gudang.</p>
+                    <p class="mt-0.5 text-sm text-slate-500">Seluruh catatan barang yang diambil dari gudang oleh penjual.</p>
                 </div>
 
                 <div class="border-b border-slate-100 px-5 py-4">
@@ -100,7 +112,7 @@
                                 <th class="px-5 py-3 font-semibold text-right">Kembali</th>
                                 <th class="px-5 py-3 font-semibold text-right">Terjual</th>
                                 <th class="px-5 py-3 font-semibold text-right">Sisa</th>
-                                <th class="px-5 py-3 text-right font-semibold">Aksi</th>
+                                <th class="px-5 py-3 text-right font-semibold">Status</th>
                             </tr>
                         </thead>
                         <tbody class="divide-y divide-slate-100">
@@ -127,56 +139,22 @@
                                         {{ number_format($k->sisa_belum_kembali, 0, ',', '.') }}
                                     </td>
                                     <td class="px-5 py-3.5 text-right">
-                                        @if ($k->sisa_belum_kembali > 0)
-                                            <div class="flex flex-col items-end gap-2">
-                                            <details class="group w-fit">
-                                                <summary class="inline-flex cursor-pointer list-none items-center gap-1 rounded-lg bg-sky-50 px-2.5 py-1.5 text-xs font-semibold text-sky-700 ring-1 ring-inset ring-sky-600/20 transition hover:bg-sky-100">
-                                                    Jual
-                                                    <svg class="h-3.5 w-3.5 transition group-open:rotate-180" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
-                                                        <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
-                                                    </svg>
-                                                </summary>
-                                                <form action="{{ route('keluar.jual', $k) }}" method="POST" class="mt-2 flex flex-col gap-2 rounded-xl bg-slate-50 p-3 ring-1 ring-slate-200">
-                                                    @csrf
-                                                    <input type="number" name="jumlah" required min="1" max="{{ $k->sisa_belum_kembali }}" step="1"
-                                                           class="input py-1.5 font-mono" placeholder="Jumlah terjual">
-                                                    <input type="text" name="catatan" class="input py-1.5" placeholder="Catatan (opsional)">
-                                                    <p class="text-[11px] text-slate-400">Barang laku akan mengubah status menjadi <span class="font-semibold text-slate-600">terjual</span>.</p>
-                                                    <button type="submit" class="btn-primary !py-1.5 !text-xs">
-                                                        Simpan Terjual
-                                                    </button>
-                                                </form>
-                                            </details>
-                                            <details class="group w-fit">
-                                                <summary class="inline-flex cursor-pointer list-none items-center gap-1 rounded-lg bg-amber-50 px-2.5 py-1.5 text-xs font-semibold text-amber-700 ring-1 ring-inset ring-amber-600/20 transition hover:bg-amber-100">
-                                                    Kembalikan
-                                                    <svg class="h-3.5 w-3.5 transition group-open:rotate-180" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
-                                                        <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
-                                                    </svg>
-                                                </summary>
-                                                <form action="{{ route('keluar.kembali', $k) }}" method="POST" class="mt-2 flex flex-col gap-2 rounded-xl bg-slate-50 p-3 ring-1 ring-slate-200">
-                                                    @csrf
-                                                    <input type="number" name="jumlah" required min="1" max="{{ $k->sisa_belum_kembali }}" step="1"
-                                                           class="input py-1.5 font-mono" placeholder="Jumlah kembali">
-                                                    <input type="text" name="catatan" class="input py-1.5" placeholder="Catatan (opsional)">
-                                                    <p class="text-[11px] text-slate-400">Barang yang kembali akan tercatat sebagai <span class="font-semibold text-amber-600">barang lama</span> di gudang.</p>
-                                                    <button type="submit" class="btn-primary !py-1.5 !text-xs">
-                                                        Simpan Kembali
-                                                    </button>
-                                                </form>
-                                            </details>
-                                            </div>
-                                        @else
-                                            <div class="flex flex-col items-end gap-1">
-                                                @if ($k->jumlah_sudah_terjual > 0)
-                                                    <span class="rounded-full bg-sky-50 px-2.5 py-1 text-xs font-medium text-sky-700 ring-1 ring-inset ring-sky-600/20">Laku</span>
-                                                @endif
-                                                @if ($k->jumlah_sudah_kembali > 0)
-                                                    <span class="rounded-full bg-amber-50 px-2.5 py-1 text-xs font-medium text-amber-700 ring-1 ring-inset ring-amber-600/20">Kembali</span>
-                                                @endif
-                                                <span class="rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-medium text-emerald-700 ring-1 ring-inset ring-emerald-600/20">Lengkap</span>
-                                            </div>
-                                        @endif
+                                            @if ($k->sisa_belum_kembali > 0)
+                                                <span class="inline-flex items-center gap-1 rounded-full bg-amber-50 px-2.5 py-1 text-xs font-medium text-amber-700 ring-1 ring-inset ring-amber-600/20">
+                                                    <span class="h-1.5 w-1.5 rounded-full bg-amber-500"></span>
+                                                    Berjalan
+                                                </span>
+                                            @else
+                                                <div class="flex flex-col items-end gap-1">
+                                                    @if ($k->jumlah_sudah_terjual > 0)
+                                                        <span class="rounded-full bg-sky-50 px-2.5 py-1 text-xs font-medium text-sky-700 ring-1 ring-inset ring-sky-600/20">Laku</span>
+                                                    @endif
+                                                    @if ($k->jumlah_sudah_kembali > 0)
+                                                        <span class="rounded-full bg-amber-50 px-2.5 py-1 text-xs font-medium text-amber-700 ring-1 ring-inset ring-amber-600/20">Kembali</span>
+                                                    @endif
+                                                    <span class="rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-medium text-emerald-700 ring-1 ring-inset ring-emerald-600/20">Lengkap</span>
+                                                </div>
+                                            @endif
                                     </td>
                                 </tr>
                             @empty
@@ -201,7 +179,53 @@
         </div>
     @else
         {{-- ===== TAMPILAN PENJUAL ===== --}}
-        <div class="grid grid-cols-1 gap-6">
+        <div class="grid grid-cols-1 gap-6 xl:grid-cols-3">
+            {{-- FORM AMBIL BARANG --}}
+            <div class="card h-fit xl:col-span-1">
+                <div class="card-head">
+                    <h2 class="text-base font-bold text-brand-950">Ambil Barang dari Gudang</h2>
+                    <p class="mt-0.5 text-sm text-slate-500">Pilih barang untuk dibawa dijual. Stok gudang berkurang otomatis.</p>
+                </div>
+
+                <form action="{{ route('keluar.store') }}" method="POST" class="space-y-4 p-6">
+                    @csrf
+                    <div>
+                        <label for="barang_id" class="label">Pilih Barang <span class="text-rose-500">*</span></label>
+                        <select name="barang_id" id="barang_id" required class="input">
+                            <option value="">-- Pilih Barang (sisa stok > 0) --</option>
+                            @foreach ($daftarBarang as $b)
+                                <option value="{{ $b->id }}" @selected(old('barang_id') == $b->id)>
+                                    {{ $b->kodeTampil() }} — {{ $b->jenis_barang }} {{ $b->merk_produk }} uk. {{ $b->ukuran_produk }} (sisa {{ $b->sisa_stok }})
+                                </option>
+                            @endforeach
+                        </select>
+                        @error('barang_id')
+                            <p class="mt-1 text-xs text-rose-600">{{ $message }}</p>
+                        @enderror
+                    </div>
+                    <div>
+                        <label for="jumlah" class="label">Jumlah Diambil <span class="text-rose-500">*</span></label>
+                        <input type="number" name="jumlah" id="jumlah" required min="1" step="1" class="input font-mono"
+                               value="{{ old('jumlah') }}" placeholder="contoh: 2">
+                        <p id="hint-jumlah" class="mt-1 text-xs text-slate-500">Maksimal sesuai sisa stok barang.</p>
+                        @error('jumlah')
+                            <p class="mt-1 text-xs text-rose-600">{{ $message }}</p>
+                        @enderror
+                    </div>
+                    <div>
+                        <label for="catatan" class="label">Catatan</label>
+                        <textarea name="catatan" id="catatan" rows="2" class="input resize-none" placeholder="opsional">{{ old('catatan') }}</textarea>
+                    </div>
+                    <button type="submit" class="btn-primary w-full">
+                        <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-7.5A2.25 2.25 0 003.75 5.25v13.5A2.25 2.25 0 005.25 21h7.5a2.25 2.25 0 002.25-2.25V15" />
+                        </svg>
+                        Ambil Barang
+                    </button>
+                </form>
+            </div>
+
+            <div class="xl:col-span-2">
             {{-- RINGKASAN --}}
             @php
                 $totalBawa = $keluars->sum('jumlah');
@@ -229,7 +253,7 @@
             </div>
 
             {{-- DAFTAR KARTU --}}
-            <div class="card">
+            <div class="card mt-6">
                 <div class="card-head flex flex-wrap items-center justify-between gap-3">
                     <div>
                         <h2 class="text-base font-bold text-brand-950">Barang yang Saya Bawa</h2>
@@ -363,7 +387,7 @@
                             <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-7.5A2.25 2.25 0 003.75 5.25v13.5A2.25 2.25 0 005.25 21h7.5a2.25 2.25 0 002.25-2.25V15" />
                         </svg>
                         <p class="text-sm font-medium text-slate-500">Belum ada catatan barang untuk Anda</p>
-                        <p class="mt-1 text-sm text-slate-400">Pengambilan barang yang dicatat admin akan tampil di sini.</p>
+                        <p class="mt-1 text-sm text-slate-400">Gunakan form "Ambil Barang dari Gudang" di samping.</p>
                     </div>
                 @endforelse
 
@@ -372,6 +396,7 @@
                         {{ $keluars->links() }}
                     </div>
                 @endif
+            </div>
             </div>
         </div>
     @endif

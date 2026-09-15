@@ -39,7 +39,7 @@ class DashboardController extends Controller
                 'total' => (int) $row->total,
             ]);
 
-        $barangTerbaru = Barang::latest('id')->take(5)->get();
+        $barangTerbaru = Barang::denganUnitStok()->latest('id')->take(5)->get();
 
         return view('dashboard.index', compact(
             'totalSku',

@@ -166,6 +166,8 @@
             </div>
             @if (auth()->user()?->isAdmin())
                 <a href="{{ route('barang.index') }}" class="btn-secondary">Lihat Semua</a>
+            @else
+                <a href="{{ route('barang.index') }}" class="btn-secondary">Lihat Stok</a>
             @endif
         </div>
         <div class="overflow-x-auto">
