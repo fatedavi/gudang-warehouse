@@ -236,19 +236,19 @@
             <div class="grid grid-cols-2 gap-4 xl:grid-cols-4">
                 <div class="rounded-xl border border-slate-200 bg-white p-4 shadow-card">
                     <p class="text-xs font-semibold uppercase tracking-wide text-slate-400">Total Dibawa</p>
-                    <p class="mt-1 font-mono text-2xl font-bold tabular-nums text-brand-950">{{ number_format($totalBawa, 0, ',', '.') }}</p>
+                    <p class="mt-1 font-mono text-2xl font-bold tabular-nums text-brand-950" data-hitung>{{ number_format($totalBawa, 0, ',', '.') }}</p>
                 </div>
                 <div class="rounded-xl border border-slate-200 bg-white p-4 shadow-card">
                     <p class="text-xs font-semibold uppercase tracking-wide text-slate-400">Sudah Laku</p>
-                    <p class="mt-1 font-mono text-2xl font-bold tabular-nums text-sky-700">{{ number_format($totalLaku, 0, ',', '.') }}</p>
+                    <p class="mt-1 font-mono text-2xl font-bold tabular-nums text-sky-700" data-hitung>{{ number_format($totalLaku, 0, ',', '.') }}</p>
                 </div>
                 <div class="rounded-xl border border-slate-200 bg-white p-4 shadow-card">
                     <p class="text-xs font-semibold uppercase tracking-wide text-slate-400">Dikembalikan</p>
-                    <p class="mt-1 font-mono text-2xl font-bold tabular-nums text-amber-700">{{ number_format($totalKembali, 0, ',', '.') }}</p>
+                    <p class="mt-1 font-mono text-2xl font-bold tabular-nums text-amber-700" data-hitung>{{ number_format($totalKembali, 0, ',', '.') }}</p>
                 </div>
                 <div class="rounded-xl border border-slate-200 bg-white p-4 shadow-card">
                     <p class="text-xs font-semibold uppercase tracking-wide text-slate-400">Masih Dipegang</p>
-                    <p class="mt-1 font-mono text-2xl font-bold tabular-nums text-rose-600">{{ number_format($totalSisa, 0, ',', '.') }}</p>
+                    <p class="mt-1 font-mono text-2xl font-bold tabular-nums text-rose-600" data-hitung>{{ number_format($totalSisa, 0, ',', '.') }}</p>
                 </div>
             </div>
 

@@ -39,13 +39,13 @@
                 </div>
                 <div class="rounded-xl border border-slate-200 bg-slate-50/60 p-4">
                     <dt class="text-xs font-semibold uppercase tracking-wide text-slate-400">Total Unit</dt>
-                    <dd class="mt-1 font-mono text-lg font-bold tabular-nums text-brand-950">
+                    <dd data-hitung class="mt-1 font-mono text-lg font-bold tabular-nums text-brand-950">
                         {{ number_format($barang->qty, 0, ',', '.') }} unit
                     </dd>
                 </div>
                 <div class="rounded-xl border border-brand-100 bg-brand-50/60 p-4">
                     <dt class="text-xs font-semibold uppercase tracking-wide text-brand-600">Sisa Stok</dt>
-                    <dd class="mt-1 font-mono text-2xl font-bold tabular-nums {{ $barang->sisa_stok > 0 ? 'text-brand-950' : 'text-slate-400' }}">
+                    <dd data-hitung class="mt-1 font-mono text-2xl font-bold tabular-nums {{ $barang->sisa_stok > 0 ? 'text-brand-950' : 'text-slate-400' }}">
                         {{ number_format($barang->sisa_stok, 0, ',', '.') }} unit
                     </dd>
                 </div>

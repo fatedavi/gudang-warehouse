@@ -178,6 +178,42 @@ function jalankanGrafikDashboard() {
     });
 }
 
+function jalankanAnimasiAngka() {
+    const kurangiGerak = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+    document.querySelectorAll('[data-hitung]').forEach((el) => {
+        const teksAkhir = (el.textContent || '').trim();
+        const cocok = teksAkhir.match(/-?\d+(?:\.\d+)*/);
+        if (!cocok) return;
+
+        const target = parseInt(cocok[0].replace(/\./g, ''), 10);
+        if (Number.isNaN(target) || target <= 0) return;
+
+        const durasi = 900;
+        const mulai = performance.now();
+        const format = (nilai) => nilai.toLocaleString('id-ID');
+
+        function isiUlang(angka) {
+            el.textContent = teksAkhir.replace(cocok[0], format(angka));
+        }
+
+        function langkah(sekarang) {
+            const progres = Math.min((sekarang - mulai) / durasi, 1);
+            const eased = 1 - Math.pow(1 - progres, 3);
+            isiUlang(Math.round(target * eased));
+            if (progres < 1) {
+                requestAnimationFrame(langkah);
+            }
+        }
+
+        if (kurangiGerak) {
+            isiUlang(target);
+        } else {
+            requestAnimationFrame(langkah);
+        }
+    });
+}
+
 function jalankanKonfirmasiHapus() {
     document.querySelectorAll('form[data-confirm]').forEach((form) => {
         form.addEventListener('submit', (e) => {
@@ -191,5 +227,6 @@ function jalankanKonfirmasiHapus() {
 document.addEventListener('DOMContentLoaded', () => {
     jalankanJam();
     jalankanGrafikDashboard();
+    jalankanAnimasiAngka();
     jalankanKonfirmasiHapus();
 });

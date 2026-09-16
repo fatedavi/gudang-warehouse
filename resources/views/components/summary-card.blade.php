@@ -4,7 +4,7 @@
     <div class="flex items-start justify-between gap-4">
         <div class="min-w-0">
             <p class="text-xs font-semibold uppercase tracking-wide text-slate-400">{{ $label }}</p>
-            <p class="mt-2 text-2xl font-bold tabular-nums tracking-tight {{ $peringatan ? 'text-rose-600' : 'text-brand-950' }}" {{ $attributes }}>
+            <p data-hitung class="mt-2 text-2xl font-bold tabular-nums tracking-tight {{ $peringatan ? 'text-rose-600' : 'text-brand-950' }}" {{ $attributes }}>
                 {{ $nilai }}
             </p>
             @if ($sub)

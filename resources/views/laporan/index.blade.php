@@ -21,28 +21,28 @@
     <div class="mb-5 grid grid-cols-2 gap-3 xl:grid-cols-5">
         <a href="{{ route('laporan.gudang') }}" class="rounded-xl border p-4 shadow-card transition {{ $status === \App\Models\Barang::STATUS_DI_GUDANG ? 'border-emerald-300 bg-emerald-50' : 'border-slate-200 bg-white hover:border-emerald-200' }}">
             <p class="text-xs font-semibold uppercase tracking-wide text-slate-400">Di Gudang</p>
-            <p class="mt-1 font-mono text-2xl font-bold tabular-nums text-emerald-700">{{ number_format($ringkasan[\App\Models\Barang::STATUS_DI_GUDANG], 0, ',', '.') }}</p>
+            <p data-hitung class="mt-1 font-mono text-2xl font-bold tabular-nums text-emerald-700">{{ number_format($ringkasan[\App\Models\Barang::STATUS_DI_GUDANG], 0, ',', '.') }}</p>
             <p class="mt-1 text-[11px] leading-snug text-slate-400">Produk yang masih punya sisa stok di gudang.</p>
         </a>
         <a href="{{ route('laporan.baru') }}" class="rounded-xl border p-4 shadow-card transition {{ $status === \App\Models\Barang::STATUS_BARU ? 'border-sky-300 bg-sky-50' : 'border-slate-200 bg-white hover:border-sky-200' }}">
             <p class="text-xs font-semibold uppercase tracking-wide text-slate-400">Barang Baru</p>
-            <p class="mt-1 font-mono text-2xl font-bold tabular-nums text-sky-700">{{ number_format($ringkasan[\App\Models\Barang::STATUS_BARU], 0, ',', '.') }}</p>
+            <p data-hitung class="mt-1 font-mono text-2xl font-bold tabular-nums text-sky-700">{{ number_format($ringkasan[\App\Models\Barang::STATUS_BARU], 0, ',', '.') }}</p>
             <p class="mt-1 text-[11px] leading-snug text-slate-400">Unit di gudang yang belum pernah keluar.</p>
         </a>
         <a href="{{ route('laporan.lama') }}" class="rounded-xl border p-4 shadow-card transition {{ $status === \App\Models\Barang::STATUS_LAMA ? 'border-amber-300 bg-amber-50' : 'border-slate-200 bg-white hover:border-amber-200' }}">
             <p class="text-xs font-semibold uppercase tracking-wide text-slate-400">Barang Lama</p>
-            <p class="mt-1 font-mono text-2xl font-bold tabular-nums text-amber-700">{{ number_format($ringkasan[\App\Models\Barang::STATUS_LAMA], 0, ',', '.') }}</p>
+            <p data-hitung class="mt-1 font-mono text-2xl font-bold tabular-nums text-amber-700">{{ number_format($ringkasan[\App\Models\Barang::STATUS_LAMA], 0, ',', '.') }}</p>
             <p class="mt-1 text-[11px] leading-snug text-slate-400">Unit di gudang yang pernah keluar lalu kembali.</p>
         </a>
         <a href="{{ route('keluar.index') }}" class="rounded-xl border p-4 shadow-card transition border-rose-200 bg-white hover:border-rose-300">
             <p class="text-xs font-semibold uppercase tracking-wide text-rose-500">Barang di Luar</p>
-            <p class="mt-1 font-mono text-2xl font-bold tabular-nums text-rose-600">{{ number_format($ringkasan[\App\Models\BarangUnit::STATUS_KELUAR], 0, ',', '.') }}</p>
+            <p data-hitung class="mt-1 font-mono text-2xl font-bold tabular-nums text-rose-600">{{ number_format($ringkasan[\App\Models\BarangUnit::STATUS_KELUAR], 0, ',', '.') }}</p>
             <p class="mt-1 text-[11px] leading-snug text-slate-400">Unit masih dipegang penjual / di luar belum kembali.</p>
         </a>
-        <a href="{{ route('laporan.terjual') }}" class="rounded-xl border p-4 shadow-card transition {{ $status === \App\Models\Barang::STATUS_TERJUAL ? 'border-slate-300 bg-slate-50' : 'border-slate-200 bg-white hover:border-slate-200' }}">
-            <p class="text-xs font-semibold uppercase tracking-wide text-slate-400">Terjual</p>
-            <p class="mt-1 font-mono text-2xl font-bold tabular-nums text-slate-700">{{ number_format($ringkasan[\App\Models\Barang::STATUS_TERJUAL], 0, ',', '.') }}</p>
-            <p class="mt-1 text-[11px] leading-snug text-slate-400">Total unit yang sudah terjual.</p>
+        <a href="{{ route('laporan.terjual') }}" class="rounded-xl border p-4 shadow-card transition {{ $status === \App\Models\Barang::STATUS_TERJUAL ? 'border-slate-800 bg-slate-800 text-white' : 'border-slate-200 bg-white hover:border-slate-300' }}">
+            <p class="text-xs font-semibold uppercase tracking-wide {{ $status === \App\Models\Barang::STATUS_TERJUAL ? 'text-slate-300' : 'text-slate-400' }}">Terjual</p>
+            <p data-hitung class="mt-1 font-mono text-2xl font-bold tabular-nums {{ $status === \App\Models\Barang::STATUS_TERJUAL ? 'text-white' : 'text-slate-700' }}">{{ number_format($ringkasan[\App\Models\Barang::STATUS_TERJUAL], 0, ',', '.') }}</p>
+            <p class="mt-1 text-[11px] leading-snug {{ $status === \App\Models\Barang::STATUS_TERJUAL ? 'text-slate-400' : 'text-slate-400' }}">Total unit yang sudah terjual.</p>
         </a>
     </div>
 

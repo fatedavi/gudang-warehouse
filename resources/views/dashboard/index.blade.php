@@ -105,7 +105,7 @@
             </div>
             <div class="p-5">
                 <div class="flex items-end justify-between">
-                    <p class="font-mono text-3xl font-bold tabular-nums {{ $overload ? 'text-rose-600' : 'text-brand-950' }}">{{ $pemanfaatan }}%</p>
+                    <p data-hitung class="font-mono text-3xl font-bold tabular-nums {{ $overload ? 'text-rose-600' : 'text-brand-950' }}">{{ $pemanfaatan }}%</p>
                     <p class="text-xs text-slate-500">
                         <span class="font-semibold text-slate-700">{{ number_format($totalSisa, 0, ',', '.') }}</span> / {{ number_format($kapasitas, 0, ',', '.') }} unit
                     </p>
